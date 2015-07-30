@@ -1,0 +1,22 @@
+{% extends 'SonataAdminBundle:CRUD:base_show_field.html.twig' %}
+
+{% block field %}
+{% spaceless %}
+    {% if value is not null %}
+        <table class="table table-bordered">
+        {% for key, values in value %}
+            <tr>
+                <td class="col-md-4">{{ key }}</td>
+                <td>
+                    <ul>
+                    {% for element in values %}
+                        <li>{{ element }}</li>
+                    {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% endif %}
+{% endspaceless %}
+{% endblock %}

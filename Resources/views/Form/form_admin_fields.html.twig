@@ -1,0 +1,207 @@
+{% extends 'SonataAdminBundle:Form:form_admin_fields.html.twig' %}
+
+{# Surcharge pour placer les classes des checkbox dans une liste #}
+{% block choice_widget %}
+{% spaceless %}
+    {% if compound %}
+        <ul {{ block('widget_container_attributes_choice_widget') }}>
+        {% for child in form %}
+            <li>
+                {% set form_widget_content %}
+                    {{ form_widget(child, {'horizontal': false, 'horizontal_input_wrapper_class': ''}) }} {# {'horizontal': false, 'horizontal_input_wrapper_class': ''} needed to avoid MopaBootstrapBundle messing with the DOM #}
+                {% endset %}
+                {{ form_label(child, child.vars.label|default(null), { 'in_list_checkbox' : true, 'widget' : form_widget_content, 'attr': {'class': 'ui-checkbox'}} ) }}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+    {% if sonata_admin.admin and not sonata_admin.admin.getConfigurationPool().getOption('use_select2') %}
+        {% set attr = attr|merge({'class': attr.class|default('') ~ ' form-control'}) %}
+    {% endif %}
+    <select {{ block('widget_attributes') }}{% if multiple %} multiple="multiple"{% endif %}>
+        {% if empty_value is not none %}
+            <option value="">
+                {% if not sonata_admin.admin %}
+                    {{- empty_value|trans({}, translation_domain) -}}
+                {% else %}
+                    {{- empty_value|trans({}, sonata_admin.field_description.translationDomain) -}}
+                {% endif%}
+            </option>
+        {% endif %}
+        {% if preferred_choices|length > 0 %}
+            {% set options = preferred_choices %}
+            {{ block('choice_widget_options') }}
+            {% if choices|length > 0 %}
+                <option disabled="disabled">{{ separator }}</option>
+            {% endif %}
+        {% endif %}
+        {% set options = choices %}
+        {{ block('choice_widget_options') }}
+    </select>
+    {% endif %}
+{% endspaceless %}
+{% endblock choice_widget %}
+
+{# Surcharge pour pouvoir placer les classes des checkboxs #}
+{% block form_row %}
+    {% set label_class = "" %}
+    {% set div_class = "" %}
+    {% if sonata_admin.admin and sonata_admin.admin.getConfigurationPool().getOption('form_type') == 'horizontal' %}
+        {% set label_class = "control-label col-sm-3" %}
+        {% set div_class = "col-sm-9 col-md-9" %}
+    {% else %}
+        {% set label_class = "control-label" %}
+    {% endif%}
+
+    {% if sonata_admin is not defined or not sonata_admin_enabled or not sonata_admin.field_description %}
+        <div class="form-group {% if errors|length > 0%} has-error{% endif %}">
+            {{ form_label(form, label|default(null)) }}
+            <div class="{% if label is sameas(false) %}sonata-collection-row-without-label{% endif %}">
+                {{ form_widget(form, {'horizontal': false, 'horizontal_input_wrapper_class': ''}) }} {# {'horizontal': false, 'horizontal_input_wrapper_class': ''} needed to avoid MopaBootstrapBundle messing with the DOM #}
+                {% if errors|length > 0 %}
+                    <div class="help-block sonata-ba-field-error-messages">
+                        {{ form_errors(form) }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="form-group{% if errors|length > 0%} has-error{%endif%}" id="sonata-ba-field-container-{{ id }}">
+
+            {% if sonata_admin.field_description.type == 'checkbox' or sonata_admin.field_description.type == 'boolean' or "checkbox" in form.vars.block_prefixes %}
+                <div class="col-md-12">
+                {% set form_widget_content %}
+                    {{ form_widget(form, {'horizontal': false, 'horizontal_input_wrapper_class': ''}) }}
+                {% endset %}
+                {{ form_label(form, form.vars.label|default(null), {'in_list_checkbox' : true, 'widget' : form_widget_content, 'attr': {'class': 'ui-checkbox-solo'}} ) }}
+                </div>
+            
+            {% elseif sonata_admin.field_description.type == 'info' %}
+                <div class="col-md-12">
+                {{ form_widget(form, {'horizontal': false, 'horizontal_input_wrapper_class': ''}) }}
+                </div>
+            {% else %}
+
+            {% block label %}
+                {% if sonata_admin.field_description.options.name is defined %}
+                    {{ form_label(form, sonata_admin.field_description.options.name, { 'attr' : {'class' : label_class} }) }}
+                {% else %}
+                    {{ form_label(form, label|default(null), { 'attr' : {'class' : label_class} }) }}
+                {% endif %}
+            {% endblock %}
+
+            {% set has_label = sonata_admin.field_description.options.name is defined or label is not sameas(false) %}
+            <div class="{{ div_class }} sonata-ba-field sonata-ba-field-{{ sonata_admin.edit }}-{{ sonata_admin.inline }} {% if errors|length > 0 %}sonata-ba-field-error{% endif %} {% if not has_label %}sonata-collection-row-without-label{% endif %}">
+
+                {{ form_widget(form, {'horizontal': false, 'horizontal_input_wrapper_class': ''}) }} {# {'horizontal': false, 'horizontal_input_wrapper_class': ''} needed to avoid MopaBootstrapBundle messing with the DOM #}
+
+                {% if errors|length > 0 %}
+                    <div class="help-block sonata-ba-field-error-messages">
+                        {{ form_errors(form) }}
+                    </div>
+                {% endif %}
+
+                {% if sonata_admin.field_description.help %}
+                    <span class="help-block sonata-ba-field-help">{{ sonata_admin.admin.trans(sonata_admin.field_description.help, {}, sonata_admin.field_description.translationDomain)|raw }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock form_row %}
+
+{# Surcharge des date picker pour virer des class et changer l'option maxDate mal formatee #}
+{% block sonata_type_date_picker_widget %}
+    {% spaceless %}
+        <div>
+            {% if datepicker_use_button %}
+                <div class='input-group date' id='{{ id }}' data-date-format="{{ moment_format }}">
+            {% else %}
+                {% set attr = attr|merge({'data-date-format': moment_format}) %}
+            {% endif %}
+            
+            {{ block('date_widget') }}
+            {% if datepicker_use_button %}
+                    <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+                </div>
+            {% endif %}
+        </div>
+        
+        {% if dp_options.maxDate == "" or dp_options.maxDate|length > 10 %}
+        {% set dp_options = dp_options|merge({'maxDate': null}) %}
+        {% endif %}
+        <script type="text/javascript">
+            jQuery(function ($) {
+                $('#{{ id }}').datetimepicker({{ dp_options|json_encode|raw }});
+            });
+        </script>
+    {% endspaceless %}
+{% endblock sonata_type_date_picker_widget %}
+
+{% block sonata_type_datetime_picker_widget %}
+    {% spaceless %}
+        <div>
+            {% if datepicker_use_button %}
+                <div class='input-group date' id='{{ id }}' data-date-format="{{ moment_format }}">
+            {% else %}
+                {% set attr = attr|merge({'data-date-format': moment_format}) %}
+            {% endif %}
+            {{ block('datetime_widget') }}
+            {% if datepicker_use_button %}
+                  <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+                </div>
+            {% endif %}
+        </div>
+        {% if dp_options.maxDate == "" or dp_options.maxDate|length > 10 %}
+        {% set dp_options = dp_options|merge({'maxDate': null}) %}
+        {% endif %}
+        <script type="text/javascript">
+            jQuery(function ($) {
+                $('#{{ id }}').datetimepicker({{ dp_options|json_encode|raw }});
+            });
+        </script>
+    {% endspaceless %}
+{% endblock sonata_type_datetime_picker_widget %}
+
+{% block info_widget %}
+    {% spaceless %}
+        <div class="{{ form.vars.wrapper_class }}">
+            {% if not sonata_admin.admin %}
+                {{- form.vars.content|trans({}, translation_domain)|raw -}}
+            {% else %}
+                {{- form.vars.content|trans({}, sonata_admin.field_description.translationDomain)|raw -}}
+            {% endif%}
+        </div>
+    {% endspaceless %}
+{% endblock info_widget %}
+
+
+{% block sonata_type_native_collection_widget_row %}
+{# Surcharge pour passer les admin #}
+{% spaceless %}
+    <div class="sonata-collection-row">
+        {% if allow_delete %}
+            <a href="#" class="btn sonata-collection-delete"><i class="fa fa-minus-circle"></i></a>
+        {% endif %}
+        {{ form_row(child, {"sonata_admin": sonata_admin, "sonata_admin_enabled": sonata_admin_enabled}) }}
+    </div>
+{% endspaceless %}
+{% endblock sonata_type_native_collection_widget_row %}
+
+{% block taginput_widget %}
+    {% spaceless %}
+        {{ block('form_widget_simple') }}
+        <script type="text/javascript">
+            jQuery('#{{ form.vars.id }}').tagsinput({});
+        </script>
+    {% endspaceless %}
+{% endblock taginput_widget %}
+
+{% block percent_widget %}
+    {% spaceless %}
+        <div class="input-group">
+        {{ block('integer_widget') }}
+        <span class="input-group-addon">%</span>
+        </div>
+    {% endspaceless %}
+{% endblock percent_widget %}

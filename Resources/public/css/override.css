@@ -1,0 +1,13 @@
+.select2-drop {
+    min-width: 300px;
+}
+
+.ui-dialog {
+    max-height: 600px;
+    font-family:'Source Sans Pro', sans-serif;
+    font-size:14px;
+    overflow-y: auto;
+}
+.ui-dialog .ui-dialog-content {
+    overflow-x: hidden;
+}
